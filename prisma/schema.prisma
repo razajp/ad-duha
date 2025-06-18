@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Appointment {
+  id             Int       @id @default(autoincrement())
+  name           String
+  phone          String
+  date           DateTime
+  time           String
+  address        String
+  amount         Int
+  programDetails String
+  status         String    @default("pending")
+  payments       Payment[] // Relation field
+}
+
+model Payment {
+  id              Int            @id @default(autoincrement())
+  amount          Int
+  date            DateTime       @default(now())
+  appointmentId   Int?
+  Appointment     Appointment?   @relation(fields: [appointmentId], references: [id])
+  monthlyClientId Int?
+  MonthlyClient   MonthlyClient? @relation(fields: [monthlyClientId], references: [id])
+  accountId       Int
+  Account         Account        @relation(fields: [accountId], references: [id])
+}
+
+model Withdraw {
+  id        Int      @id @default(autoincrement())
+  amount    Int
+  reason    String   @default("Not specified")
+  date      DateTime @default(now())
+  accountId Int
+  Account   Account  @relation(fields: [accountId], references: [id])
+}
+
+model Account {
+  id          Int        @id @default(autoincrement())
+  name        String
+  phone       String
+  earnings    Payment[]
+  withdrawals Withdraw[]
+}
+
+model MonthlyClient {
+  id       Int       @id @default(autoincrement())
+  name     String
+  phone    Int
+  amount   Int
+  payments Payment[]
+}
