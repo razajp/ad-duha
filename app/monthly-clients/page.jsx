@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "../../components/ui/label"
 import { User, Phone, DollarSign, CheckCircle, Clock, Edit, Save, X, AlertTriangle } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
+import { useToast } from "../../components/providers/ToastProvider"
 
 // Get current month and year
 const getCurrentMonth = () => {
@@ -15,90 +16,12 @@ const getCurrentMonth = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
 }
 
-const fakeMonthlyClients = [
-  {
-    id: 1,
-    name: "Ahmed Hassan",
-    phone: "+92 300 1234567",
-    amount: 5000,
-    payments: [
-      { month: "2024-01", paidDate: "2024-01-05" },
-      { month: "2024-02", paidDate: "2024-02-03" },
-      { month: "2024-03", paidDate: "2024-03-07" },
-      { month: "2024-04", paidDate: "2024-04-02" },
-      { month: "2024-05", paidDate: "2024-05-01" },
-      { month: "2024-06", paidDate: "2024-06-04" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Fatima Khan",
-    phone: "+92 301 2345678",
-    amount: 3500,
-    payments: [
-      { month: "2024-01", paidDate: "2024-01-10" },
-      { month: "2024-02", paidDate: "2024-02-08" },
-      { month: "2024-03", paidDate: "2024-03-12" },
-      { month: "2024-04", paidDate: "2024-04-05" },
-      { month: "2024-05", paidDate: "2024-05-03" },
-    ],
-  },
-  {
-    id: 3,
-    name: "Muhammad Ali",
-    phone: "+92 302 3456789",
-    amount: 7500,
-    payments: [
-      { month: "2024-01", paidDate: "2024-01-15" },
-      { month: "2024-02", paidDate: "2024-02-12" },
-      { month: "2024-03", paidDate: "2024-03-10" },
-      { month: "2024-04", paidDate: "2024-04-08" },
-      { month: "2024-05", paidDate: "2024-05-06" },
-      { month: "2024-06", paidDate: "2024-06-02" },
-    ],
-  },
-  {
-    id: 4,
-    name: "Aisha Malik",
-    phone: "+92 303 4567890",
-    amount: 4000,
-    payments: [
-      { month: "2024-01", paidDate: "2024-01-20" },
-      { month: "2024-02", paidDate: "2024-02-18" },
-      { month: "2024-03", paidDate: "2024-03-15" },
-      { month: "2024-04", paidDate: "2024-04-12" },
-    ],
-  },
-  {
-    id: 5,
-    name: "Omar Sheikh",
-    phone: "+92 304 5678901",
-    amount: 6000,
-    payments: [
-      { month: "2024-01", paidDate: "2024-01-25" },
-      { month: "2024-02", paidDate: "2024-02-22" },
-      { month: "2024-03", paidDate: "2024-03-20" },
-      { month: "2024-04", paidDate: "2024-04-18" },
-      { month: "2024-05", paidDate: "2024-05-15" },
-      { month: "2024-06", paidDate: "2024-06-12" },
-    ],
-  },
-  {
-    id: 6,
-    name: "Zainab Ahmed",
-    phone: "+92 305 6789012",
-    amount: 4500,
-    payments: [
-      { month: "2024-01", paidDate: "2024-01-30" },
-      { month: "2024-02", paidDate: "2024-02-28" },
-      { month: "2024-03", paidDate: "2024-03-25" },
-    ],
-  },
-]
-
 export default function MonthlyClientsPage() {
-  const [filter, setFilter] = useState("all")
-  const [clients, setClients] = useState(fakeMonthlyClients)
+  const { showToast } = useToast();
+
+  const [filter, setFilter] = useState("unpaid")
+  const [loading, setLoading] = useState(false)
+  const [clients, setClients] = useState([])
   const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, clientId: null })
   const [editModal, setEditModal] = useState({ show: false, type: null, clientId: null, value: "" })
   const contextMenuRef = useRef(null)
@@ -114,9 +37,36 @@ export default function MonthlyClientsPage() {
     clientId: null,
   })
 
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+
+      // Fetch monthlyClients data
+      const monthlyClientsResponse = await fetch("/api/monthly-clients")
+      if (!monthlyClientsResponse.ok) {
+        throw new Error("Failed to fetch monthly clients")
+      }
+
+      const monthlyClientsData = await monthlyClientsResponse.json()
+      if (monthlyClientsData.success && monthlyClientsData.data) {
+        setClients(monthlyClientsData.data)
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Check if client has paid for current month
   const hasPaidThisMonth = (client) => {
-    return client.payments.some((payment) => payment.month === currentMonth)
+    // return client.payments.some((payment) => payment.month === currentMonth)
+    console.log(client);
+    
   }
 
   const filteredClients = clients.filter((client) => {
@@ -132,6 +82,38 @@ export default function MonthlyClientsPage() {
       return <Badge className="bg-[#683223] hover:bg-[#52291d] text-white">Paid</Badge>
     } else {
       return <Badge className="bg-gray-700 text-gray-100">Unpaid</Badge>
+    }
+  }
+
+  const updateClientPayments = async (clientId) => {
+    try {
+      const response = await fetch(`/api/monthly-clients/${clientId}/payments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      console.log(response);
+      
+
+      if (!response.ok) {
+        throw new Error("Failed to mark as paid")
+      }
+
+      const result = await response.json()
+      if (result.success) {
+        showToast(`Marked as paid for ${getMonthName(currentMonth)}!`, "success")
+        fetchData() // Refresh data
+        return true
+      } else {
+        showToast(result.error || "Failed to mark as paid", "error")
+        return false
+      }
+    } catch (error) {
+      console.error("Error updating payments:", error)
+      showToast("Server error. Please try again.", "error")
+      return false
     }
   }
 
@@ -152,24 +134,11 @@ export default function MonthlyClientsPage() {
       message: `Are you sure you want to mark ${client.name}'s payment of Rs. ${client.amount.toLocaleString()} as paid for ${getMonthName(currentMonth)}?`,
       actionText: "Mark as Paid",
       clientId: clientId,
-      action: () => {
-        setClients((prev) =>
-          prev.map((client) => {
-            if (client.id === clientId) {
-              return {
-                ...client,
-                payments: [
-                  ...client.payments,
-                  {
-                    month: currentMonth,
-                    paidDate: new Date().toISOString().split("T")[0],
-                  },
-                ],
-              }
-            }
-            return client
-          }),
-        )
+      action: async () => {
+        const success = await updateClientPayments(clientId)
+        if (!success) {
+          showToast("Failed to mark as paid. Please try again.", "error")
+        }
         setConfirmDialog({ ...confirmDialog, isOpen: false })
       },
     })

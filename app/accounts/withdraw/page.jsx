@@ -26,28 +26,28 @@ export default function WithdrawPage() {
 
   // Fetch accounts on component mount
   useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        setLoading(true)
-        const response = await fetch("/api/accounts")
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch accounts")
-        }
-
-        const data = await response.json()
-        if (data.success && data.accounts) {
-          setAccounts(data.accounts)
-        }
-      } catch (error) {
-        console.error("Error fetching accounts:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchAccounts()
   }, [])
+
+  const fetchAccounts = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch("/api/accounts")
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch accounts")
+      }
+
+      const data = await response.json()
+      if (data.success && data.accounts) {
+        setAccounts(data.accounts)
+      }
+    } catch (error) {
+      console.error("Error fetching accounts:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const currentAccount = accounts.find((acc) => acc.name === selectedAccount)
   const currentAccountEarnings = currentAccount?.earnings?.reduce((sum, p) => sum + p.amount, 0) ?? 0;
@@ -83,31 +83,28 @@ export default function WithdrawPage() {
       action: async () => {
         try {
           // Record withdrawal
-          // const withdrawalResponse = await fetch("/api/accounts/withdrawals", {
-          //   method: "POST",
-          //   headers: {
-          //     "Content-Type": "application/json",
-          //   },
-          //   body: JSON.stringify({
-          //     accountName: selectedAccount,
-          //     amount: amount,
-          //     reason: withdrawReason,
-          //   }),
-          // })
+          const withdrawalResponse = await fetch("/api/accounts/withdrawals", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              accountName: selectedAccount,
+              amount: amount,
+              reason: withdrawReason,
+            }),
+          })
 
-          // if (!withdrawalResponse.ok) {
-          //   throw new Error("Failed to record withdrawal")
-          // }
-
-          // Update local state
-          // setAccounts((prev) =>
-          //   prev.map((acc) => (acc.name === selectedAccount ? { ...acc, balance: acc.balance - amount } : acc)),
-          // )
+          if (!withdrawalResponse.ok) {
+            throw new Error("Failed to record withdrawal")
+          }
 
           // Reset form
+          setSelectedAccount("")
           setWithdrawAmount("")
           setWithdrawReason("")
           setConfirmDialog({ ...confirmDialog, isOpen: false })
+          fetchAccounts() // Refresh accounts data
           alert(`Successfully withdrew Rs. ${amount.toLocaleString()} from ${selectedAccount}'s account`)
         } catch (error) {
           console.error("Error processing withdrawal:", error)
@@ -179,7 +176,7 @@ export default function WithdrawPage() {
 
                           return (
                             <SelectItem
-                              key={account.name}
+                              key={account.id}
                               value={account.name}
                               className="text-white hover:bg-gray-700"
                             >

@@ -1,5 +1,6 @@
 "use client"
 
+import { useToast } from "../../../components/providers/ToastProvider"
 import { Button } from "../../../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card"
 import { Input } from "../../../components/ui/input"
@@ -7,6 +8,39 @@ import { Label } from "../../../components/ui/label"
 import { User, Plus, X } from "lucide-react"
 
 export default function NewMonthlyClientPage() {
+  const { showToast } = useToast();
+
+  const handleRegisterMonthlyClient = async (event) => {
+    event.preventDefault()
+    const formData = new FormData(event.target)
+    const monthlyClientData = {
+      name: formData.get("clientName"),
+      phone: formData.get("phoneNumber"),
+      amount: parseFloat(formData.get("monthlyAmount")),
+    }
+    
+    // Call to API to register a new monthly client
+    try {
+      const response = await fetch("/api/monthly-clients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(monthlyClientData),
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        showToast("Monthly client registered successfully!", "success")
+        event.target.reset() // Reset the form
+      } else {
+        showToast(result.error || "Failed to register monthly client", "error")
+      }
+    } catch (error) {
+      showToast("Server error. Please try again.", "error")
+    }
+  }
+
   return (
     <>
       {/* Form Content - Scrollable without visible scrollbar */}
@@ -16,7 +50,7 @@ export default function NewMonthlyClientPage() {
         </div>
         <div className="flex-1 overflow-scroll scrollbar-hide">
           <div className="max-w-2xl mx-auto">
-            <form className="space-y-5">
+            <form className="space-y-5" id="monthly-client-form" onSubmit={handleRegisterMonthlyClient}>
               {/* Client Information Section */}
               <Card className="bg-gray-900 border-gray-800 shadow-sm">
                 <CardHeader className="py-3 px-4">
@@ -32,6 +66,7 @@ export default function NewMonthlyClientPage() {
                     </Label>
                     <Input
                       id="clientName"
+                      name="clientName"
                       placeholder="Enter client's full name"
                       required
                       className="border-gray-600 bg-gray-800 h-10 text-base text-gray-100 placeholder:text-gray-500 focus:border-[#683223] focus:ring-[#683223]"
@@ -43,6 +78,7 @@ export default function NewMonthlyClientPage() {
                     </Label>
                     <Input
                       id="phoneNumber"
+                      name="phoneNumber"
                       type="tel"
                       placeholder="Enter phone number"
                       required
@@ -59,6 +95,7 @@ export default function NewMonthlyClientPage() {
                       </span>
                       <Input
                         id="monthlyAmount"
+                        name="monthlyAmount"
                         type="number"
                         step="0.01"
                         min="0"

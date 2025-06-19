@@ -37,8 +37,6 @@ export default function NewAccountPage() {
         showToast(result.error || "Failed to register account", "error")
       }
     } catch (err) {
-      console.log(err);
-      
       showToast("Server error. Please try again.", "error")
     }
   }

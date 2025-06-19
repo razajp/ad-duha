@@ -82,8 +82,8 @@ export async function PUT(request) {
             deleteMany: {},
             create: payments.map(p => ({
               amount: p.amount,
-              account: { connect: { name: p.person } },
-            })),
+              accountId: p.accountId,
+            }))
           },
         }),
       },
@@ -92,18 +92,13 @@ export async function PUT(request) {
       },
     })
 
-    console.log("Updated appointment:", updatedAppointment);
-    
-
-    return NextResponse.json({
-      checkkar: "hello"
-    })
-
     return NextResponse.json({
       success: true,
       data: updatedAppointment,
     })
   } catch (error) {
+    console.error(error);
+
     return NextResponse.json({
       success: false,
       error: "Failed to update appointment",

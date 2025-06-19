@@ -196,7 +196,7 @@ export default function AccountsPage() {
                             <tr key={index} className="border-b border-gray-800 hover:bg-gray-800/50">
                               <td className="p-3 text-gray-100 text-sm">{formatDate(earning.date)}</td>
                               <td className="p-3 text-gray-100 text-sm">Rs. {earning.amount.toLocaleString()}</td>
-                              <td className="p-3 text-gray-100 text-sm">{earning.appointment.name}</td>
+                              <td className="p-3 text-gray-100 text-sm">{earning.Appointment?.name || earning.MonthlyClient?.name}</td>
                             </tr>
                           )) : (
                             <tr>

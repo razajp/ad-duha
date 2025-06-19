@@ -33,15 +33,15 @@ import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
 
 export default function AppointmentsPage() {
-  const [filter, setFilter] = useState("all")
+  const [filter, setFilter] = useState("upcoming")
   const [appointments, setAppointments] = useState([])
-  const [accountNames, setAccountNames] = useState([])
+  const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [paymentAppointment, setPaymentAppointment] = useState(null)
-  const [selectedPerson, setSelectedPerson] = useState("")
+  const [selectedPersonId, setSelectedPersonId] = useState("")
   const [paymentAmount, setPaymentAmount] = useState("")
   const [tempPayments, setTempPayments] = useState([])
   const [isBillModalOpen, setIsBillModalOpen] = useState(false)
@@ -85,7 +85,7 @@ export default function AppointmentsPage() {
         }
 
         if (accountsData.success) {
-          setAccountNames(accountsData.accounts.map((account => account.name)))
+          setAccounts(accountsData.accounts.map((account => ({name: account.name, id: account.id}))));
         }
       } catch (error) {
         console.error("Error fetching data:", error)
@@ -200,7 +200,7 @@ export default function AppointmentsPage() {
   }
 
   const addPayment = () => {
-    if (selectedPerson && paymentAmount && Number.parseFloat(paymentAmount) > 0) {
+    if (selectedPersonId && paymentAmount && Number.parseFloat(paymentAmount) > 0) {
       const newAmount = Number.parseFloat(paymentAmount)
       const currentTotal = getTotalPaid()
       const totalAmount = paymentAppointment?.amount || 0
@@ -212,13 +212,15 @@ export default function AppointmentsPage() {
         )
         return
       }
+      const selectedAccount = accounts.find((account) => account.id === selectedPersonId)
 
       const newPayment = {
-        person: selectedPerson,
+        person: selectedAccount.name,
+        accountId: selectedPersonId,
         amount: newAmount,
       }
       setTempPayments((prev) => [...prev, newPayment])
-      setSelectedPerson("")
+      setSelectedPersonId("")
       setPaymentAmount("")
     }
   }
@@ -249,8 +251,10 @@ export default function AppointmentsPage() {
         const finalPayments = [...tempPayments]
         const remaining = getRemainingAmount()
 
+        const moizAccount = accounts.find((account) => account.name === "Moiz")
+
         if (remaining > 0) {
-          finalPayments.push({ person: "Moiz", amount: remaining })
+          finalPayments.push({ person: "Moiz", accountId: moizAccount.id, amount: remaining })
         }
 
         const success = await updateAppointmentStatus(paymentAppointment.id, "paid", finalPayments)
@@ -259,7 +263,7 @@ export default function AppointmentsPage() {
           setIsPaymentModalOpen(false)
           setPaymentAppointment(null)
           setTempPayments([])
-          setSelectedPerson("")
+          setSelectedPersonId("")
           setPaymentAmount("")
         } else {
           alert("Failed to mark appointment as paid. Please try again.")
@@ -274,7 +278,7 @@ export default function AppointmentsPage() {
     setIsPaymentModalOpen(false)
     setPaymentAppointment(null)
     setTempPayments([])
-    setSelectedPerson("")
+    setSelectedPersonId("")
     setPaymentAmount("")
   }
 
@@ -656,16 +660,16 @@ export default function AppointmentsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-gray-300 text-sm">Person</Label>
-                    <Select value={selectedPerson} onValueChange={setSelectedPerson}>
+                    <Select value={selectedPersonId} onValueChange={setSelectedPersonId}>
                       <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                         <SelectValue placeholder="Select person" />
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-gray-600">
-                        {accountNames
-                          .filter((guy) => guy !== "Moiz")
-                          .map((guy) => (
-                            <SelectItem key={guy} value={guy} className="text-white hover:bg-gray-700">
-                              {guy}
+                        {accounts
+                          .filter((account) => account.name !== "Moiz")
+                          .map((account) => (
+                            <SelectItem key={account.id} value={account.id} className="text-white hover:bg-gray-700">
+                              {account.name}
                             </SelectItem>
                           ))}
                       </SelectContent>
@@ -686,7 +690,7 @@ export default function AppointmentsPage() {
                 <Button
                   onClick={addPayment}
                   disabled={
-                    !selectedPerson ||
+                    !selectedPersonId ||
                     !paymentAmount ||
                     Number.parseFloat(paymentAmount) <= 0 ||
                     getRemainingAmount() <= 0 ||
